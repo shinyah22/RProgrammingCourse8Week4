@@ -14,6 +14,7 @@ output: html_document
 まず、必要なパッケージを読み込み、データをダウンロードします。
 
 ```{r, include=TRUE}
+library(rpart)
 library(caret)
 library(randomForest)
 library(lubridate)
@@ -22,49 +23,18 @@ library(dplyr)
 # データのダウンロード
 trainingUrl <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
 testingUrl <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
-training <- read.csv(url(trainingUrl))
-testing <- read.csv(url(testingUrl))
-
-# 結果を確認
-str(training)
+training <- read.csv(url(trainingUrl), na.strings=c("NA","#DIV/0!", ""))
+testing <- read.csv(url(testingUrl), na.strings=c("NA","#DIV/0!", ""))
 ```
 
 ## データクリーニングと前処理のステップを実施します。
 
 ```{r, include=TRUE}
-# 1. 不要な列の削除
-data_cleaned <- training %>%
-  select(-X, -raw_timestamp_part_1, -raw_timestamp_part_2) # 例としてこれらの列を削除
-
-# 2. NA値が含まれる列の削除（あるいはNA値の多い列）
-# このステップはデータに依存するため、実際のデータを見て判断する必要があります。
-# NA値の割合が高い列を削除
-threshold <- 0.5 # 例として、50%以上NAの場合に削除
-na_counts <- sapply(data_cleaned, function(x) sum(is.na(x))) / nrow(data_cleaned)
-data_cleaned <- data_cleaned[, na_counts < threshold]
-
-# 3. 文字列のNAを表す値を実際のNAに変換
-data_cleaned[data_cleaned == ""] <- NA
-
-# 4. 特定の列のデータ型を変換
-# 例：'cvtd_timestamp'をDate型に変換
-data_cleaned$cvtd_timestamp <- as.Date(data_cleaned$cvtd_timestamp, format="%d/%m/%Y %H:%M")
-
-# 5. 'new_window'列のファクター化（'yes', 'no'を因子として扱う）
-data_cleaned$new_window <- as.factor(data_cleaned$new_window)
-
-# 6. 数値データに変換可能な列の変換
-# 数値に変換する列があれば、as.numericを使用して変換
-# data_cleaned$some_numeric_column <- as.numeric(data_cleaned$some_numeric_column)
-
-# 7. 欠損値の補完
-# 欠損値を列の中央値や平均値で補完する方法があります。
-# 例：数値列のNAを中央値で補完
-num_cols <- sapply(data_cleaned, is.numeric)
-data_cleaned[num_cols] <- lapply(data_cleaned[num_cols], function(x) ifelse(is.na(x), median(x, na.rm = TRUE), x))
-
-str(data_cleaned)
-
+training<-training[,colSums(is.na(training)) == 0]
+testing <-testing[,colSums(is.na(testing)) == 0]
+training   <-training[,-c(1:7)]
+testing <-testing[,-c(1:7)]
+str(training)
 ```
 
 ## モデルの構築と評価
@@ -77,22 +47,21 @@ trainData <- training[inTrain, ]
 testData <- training[-inTrain, ]
 
 # モデルの構築（例：ランダムフォレスト）
-#model <- randomForest(classe ~ ., data=trainData)
+model <- rpart(classe ~ ., data=trainData, method="class")
 ```
 
 ## モデルの評価を行います。
 
 ```{r, include=TRUE}
-# prediction <- predict(model, testData)
-#confusionMatrix(prediction, testData$classe)
+prediction <- predict(model, testData)
 ```
 
 ## テストデータに対する予測
 最終モデルを使用して、提供されたテストデータセットに対する予測を行います。
 
 ```{r, include=TRUE}
-#finalPredictions <- predict(model, newdata=testing)
-#finalPredictions
+finalPredictions <- predict(model, newdata=testing)
+finalPredictions
 ```
 
 ## 結論
