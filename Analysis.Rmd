@@ -11,14 +11,12 @@ output: html_document
 
 ## データの読み込みと前処理
 
-まず、必要なパッケージを読み込み、データをダウンロードします。
-
-```{r, include=TRUE}
-library(rpart)
+```{r, cache=TRUE}
 library(caret)
-library(randomForest)
-library(lubridate)
-library(dplyr)
+library(ggplot2)
+library(rpart.plot)
+library(corrplot)
+set.seed(12345)
 
 # データのダウンロード
 trainingUrl <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
@@ -27,43 +25,56 @@ training <- read.csv(url(trainingUrl), na.strings=c("NA","#DIV/0!", ""))
 testing <- read.csv(url(testingUrl), na.strings=c("NA","#DIV/0!", ""))
 ```
 
-## データクリーニングと前処理のステップを実施します。
+## データクリーニングと前処理
 
-```{r, include=TRUE}
-training<-training[,colSums(is.na(training)) == 0]
-testing <-testing[,colSums(is.na(testing)) == 0]
-training   <-training[,-c(1:7)]
-testing <-testing[,-c(1:7)]
-str(training)
+```{r, cache=TRUE}
+# NA値を含む列を削除
+training <- training[, colSums(is.na(training)) == 0]
+testing <- testing[, colSums(is.na(testing)) == 0]
+
+# 最初の7列を削除
+training <- training[, -c(1:7)]
+testing <- testing[, -c(1:7)]
 ```
 
 ## モデルの構築と評価
-データをトレーニングセットとテストセットに分割し、複数のモデルを構築します。
 
-```{r, include=TRUE}
-set.seed(12345)
-inTrain <- createDataPartition(training$classe, p=0.75, list=FALSE)
-trainData <- training[inTrain, ]
-testData <- training[-inTrain, ]
+```{r, cache=TRUE}
+subSamples <- createDataPartition(y=training$classe, p=0.75, list=FALSE)
+subTraining <- training[subSamples,]
+subTesting <- training[-subSamples,]
 
-# モデルの構築（例：ランダムフォレスト）
-model <- rpart(classe ~ ., data=trainData, method="class")
+# トレーニングのコントロール設定
+control <- trainControl(method="cv", number=3, verboseIter=TRUE)
+
+# トレーニングのコントロール設定
+control <- trainControl(method="cv", number=3, verboseIter=TRUE)
+
+# 各モデルの構築と評価
+models <- list("rpart", "rf", "gbm", "svmLinear")
+names(models) <- c("Decision Tree", "Random Forest", "Gradient Boosted Trees", "SVM")
+
+results <- lapply(models, function(method) {
+  # モデルの構築
+  model <- train(classe ~ ., data=subTraining, method=method, trControl=control, tuneLength=1)
+  # テストデータに対する予測
+  prediction <- predict(model, subTesting)
+  # 予測の精度評価
+  cm <- confusionMatrix(prediction, factor(subTesting$classe))
+  # 結果の表示
+  #results_df <- sapply(results, function(x) x$overall['Accuracy'])
+  #data.frame(Model=names(models), Accuracy=unlist(results_df), row.names=NULL)
+  return(model)
+})
+
 ```
 
-## モデルの評価を行います。
+## テストセットでの予測
 
-```{r, include=TRUE}
-prediction <- predict(model, testData)
+```{r, cache=TRUE}
+# Random Forestモデルを使用してテストセットの予測を行う
+best_model <- results[["Random Forest"]][["model"]]
+pred <- predict(best_model, subTraining)
+print(pred)
+#best_model
 ```
-
-## テストデータに対する予測
-最終モデルを使用して、提供されたテストデータセットに対する予測を行います。
-
-```{r, include=TRUE}
-finalPredictions <- predict(model, newdata=testing)
-finalPredictions
-```
-
-## 結論
-分析を通じて、予測モデルの構築と評価を行いました。モデルの精度と再現性を確保するために、適切なデータ前処理と相互検証の手法が用いられました。
-
