@@ -397,8 +397,8 @@ control &lt;- trainControl(method=&quot;cv&quot;, number=3, verboseIter=TRUE)
 # トレーニングのコントロール設定
 control &lt;- trainControl(method=&quot;cv&quot;, number=3, verboseIter=TRUE)
 
-# 各モデルの構築と評価
-models &lt;- list(&quot;rpart&quot;, &quot;rf&quot;, &quot;gbm&quot;, &quot;svmLinear&quot;)
+## 各モデルの構築と評価
+models &lt;- c(&quot;rpart&quot;, &quot;rf&quot;, &quot;gbm&quot;, &quot;svmLinear&quot;)
 names(models) &lt;- c(&quot;Decision Tree&quot;, &quot;Random Forest&quot;, &quot;Gradient Boosted Trees&quot;, &quot;SVM&quot;)
 
 results &lt;- lapply(models, function(method) {
@@ -408,7 +408,8 @@ results &lt;- lapply(models, function(method) {
   prediction &lt;- predict(model, subTesting)
   # 予測の精度評価
   cm &lt;- confusionMatrix(prediction, factor(subTesting$classe))
-  return(cm)
+  # 混同行列とモデルの返却
+  return(list(cm = cm, model = model))
 })</code></pre>
 <pre><code>## + Fold1: cp=0.116 
 ## - Fold1: cp=0.116 
@@ -502,8 +503,8 @@ results &lt;- lapply(models, function(method) {
 ## - Fold3: C=1 
 ## Aggregating results
 ## Fitting final model on full training set</code></pre>
-<pre class="r"><code># 結果の表示
-results_df &lt;- sapply(results, function(x) x$overall[&#39;Accuracy&#39;])
+<pre class="r"><code># 結果の表示 (精度のみ)
+results_df &lt;- sapply(results, function(x) x$cm$overall[&#39;Accuracy&#39;])
 data.frame(Model=names(models), Accuracy=unlist(results_df), row.names=NULL)</code></pre>
 <pre><code>##                    Model  Accuracy
 ## 1          Decision Tree 0.2844617
@@ -513,11 +514,150 @@ data.frame(Model=names(models), Accuracy=unlist(results_df), row.names=NULL)</co
 </div>
 <div id="テストセットでの予測" class="section level2">
 <h2>テストセットでの予測</h2>
-<pre class="r"><code># Random Forestモデルを使用してテストセットの予測を行う
-#best_model &lt;- results[[&quot;Random Forest&quot;]][[&quot;model&quot;]]
-#pred &lt;- predict(best_model, subTraining)
-#print(pred)
-#best_model</code></pre>
+<pre class="r"><code># テストセットでの予測
+# ランダムフォレストモデルを使用してテストセットの予測を行う
+# &#39;rf&#39; キーに基づくモデルの取得
+best_model &lt;- results[[&quot;Random Forest&quot;]]$model
+
+# テストデータセットに対する予測を実行
+pred &lt;- predict(best_model, subTesting)
+
+# 予測結果の表示
+print(pred)</code></pre>
+<pre><code>##    [1] A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A
+##   [38] A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A
+##   [75] A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A
+##  [112] A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A
+##  [149] A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A
+##  [186] A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A
+##  [223] A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A
+##  [260] A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A
+##  [297] A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A
+##  [334] A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A
+##  [371] A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A
+##  [408] A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A
+##  [445] A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A
+##  [482] A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A
+##  [519] A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A
+##  [556] A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A
+##  [593] A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A
+##  [630] A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A
+##  [667] A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A
+##  [704] A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A
+##  [741] A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A
+##  [778] A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A
+##  [815] A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A
+##  [852] A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A
+##  [889] A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A
+##  [926] A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A
+##  [963] A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A
+## [1000] A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A
+## [1037] A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A
+## [1074] A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A
+## [1111] A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A
+## [1148] A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A
+## [1185] A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A
+## [1222] A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A
+## [1259] A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A
+## [1296] A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A
+## [1333] A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A
+## [1370] A A A A A A A A A A A A A A A A A A A A A A A A A A B B B B B B B B B B B
+## [1407] B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B
+## [1444] B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B
+## [1481] B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B
+## [1518] B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B
+## [1555] B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B
+## [1592] B B B B B B B B B B B B B B B B B B B B B B A B B B B B B B B B B B B B B
+## [1629] B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B
+## [1666] B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B
+## [1703] B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B
+## [1740] B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B
+## [1777] B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B
+## [1814] B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B
+## [1851] B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B
+## [1888] B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B
+## [1925] B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B
+## [1962] B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B
+## [1999] B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B
+## [2036] B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B
+## [2073] B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B
+## [2110] B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B
+## [2147] B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B
+## [2184] B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B
+## [2221] B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B
+## [2258] B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B
+## [2295] B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B
+## [2332] B B B B B B B B B B B B B C C C C C B C C C C C C C C C C C C C C C C C C
+## [2369] C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C
+## [2406] C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C
+## [2443] C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C
+## [2480] C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C
+## [2517] C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C
+## [2554] C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C
+## [2591] C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C
+## [2628] C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C
+## [2665] C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C
+## [2702] C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C
+## [2739] C C C C C C C C C C C C C C C C C C C C C C C C C C C B C C C C C C C B C
+## [2776] C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C
+## [2813] C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C
+## [2850] C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C
+## [2887] C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C
+## [2924] C C C C C C C C C C C C C D C C C C C C C C C C C C C C C C C C C C C C C
+## [2961] C C C C C C C C C C C C C B C C C C C C C C C C C C C C C C C C C C C C C
+## [2998] C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C
+## [3035] C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C
+## [3072] C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C
+## [3109] C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C
+## [3146] C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C
+## [3183] C C C C C C C C C C C C C C C C C D D D D D D D D D D D D D D D D D D D D
+## [3220] D D D D D D D D D D D D D D D D D D D D D D D D D C D D D D D D D D D D D
+## [3257] D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D
+## [3294] D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D
+## [3331] D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D
+## [3368] D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D
+## [3405] D D D D D D D D D D D D D D D D D D C D D D D D D D D D D D D D D D D D D
+## [3442] D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D
+## [3479] D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D
+## [3516] D D D D D D D D D D D D D D D D D D D D E C C D D C C C D D D D D D D D D
+## [3553] D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D
+## [3590] D D D D D D D D D D D D D D D D D C D D D D C D D D D D D D D D D D D D D
+## [3627] D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D
+## [3664] D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D
+## [3701] D D D D E E E D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D
+## [3738] D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D
+## [3775] D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D
+## [3812] D D D D D D D D D D D C D C D D D D D D D D D D D D D D D D D D D D D D D
+## [3849] D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D
+## [3886] D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D
+## [3923] D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D
+## [3960] D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D
+## [3997] D D D D D D D E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E
+## [4034] E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E
+## [4071] E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E
+## [4108] E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E
+## [4145] E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E
+## [4182] E E E E E E E E E E E E E E E E E E E E E E E E E E E E D E E E E E E E E
+## [4219] E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E
+## [4256] E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E
+## [4293] E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E
+## [4330] E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E
+## [4367] E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E
+## [4404] E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E
+## [4441] E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E
+## [4478] E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E
+## [4515] E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E
+## [4552] E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E
+## [4589] E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E
+## [4626] E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E
+## [4663] E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E
+## [4700] E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E
+## [4737] E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E
+## [4774] E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E
+## [4811] E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E
+## [4848] E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E E
+## [4885] E E E E E E E E E E E E E E E E E E E E
+## Levels: A B C D E</code></pre>
 </div>
 
 

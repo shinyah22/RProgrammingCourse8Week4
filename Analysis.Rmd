@@ -47,34 +47,42 @@ subTesting <- training[-subSamples,]
 # トレーニングのコントロール設定
 control <- trainControl(method="cv", number=3, verboseIter=TRUE)
 
-# トレーニングのコントロール設定
-control <- trainControl(method="cv", number=3, verboseIter=TRUE)
-
 # 各モデルの構築と評価
-models <- list("rpart", "rf", "gbm", "svmLinear")
+models <- c("rpart", "rf", "gbm", "svmLinear")
 names(models) <- c("Decision Tree", "Random Forest", "Gradient Boosted Trees", "SVM")
 
-results <- lapply(models, function(method) {
-  # モデルの構築
-  model <- train(classe ~ ., data=subTraining, method=method, trControl=control, tuneLength=1)
-  # テストデータに対する予測
-  prediction <- predict(model, subTesting)
-  # 予測の精度評価
-  cm <- confusionMatrix(prediction, factor(subTesting$classe))
-  # 結果の表示
-  #results_df <- sapply(results, function(x) x$overall['Accuracy'])
-  #data.frame(Model=names(models), Accuracy=unlist(results_df), row.names=NULL)
-  return(model)
-})
+# モデルの訓練
+model_rpart <- train(classe ~ ., data=subTraining, method="rpart", trControl=control, tuneLength=1)
+# テストデータに対する予測
+prediction_rpart <- predict(model_rpart, subTesting)
+# 予測の精度評価
+cm_rpart <- confusionMatrix(prediction_rpart, subTesting$classe)
+print(cm_rpart)
 
+# モデルの訓練
+model_rf <- train(classe ~ ., data=subTraining, method="gbm", trControl=control, tuneLength=1)
+# テストデータに対する予測
+prediction_rf <- predict(model_rf, subTesting)
+# 予測の精度評価
+cm_rf <- confusionMatrix(prediction_rf, subTesting$classe)
+print(cm_rf)
 ```
 
 ## テストセットでの予測
 
 ```{r, cache=TRUE}
 # Random Forestモデルを使用してテストセットの予測を行う
-best_model <- results[["Random Forest"]][["model"]]
-pred <- predict(best_model, subTraining)
-print(pred)
-#best_model
+# Random Forestモデルを使用してテストセットの予測を行う
+# results リストからランダムフォレストモデルを取得
+best_model <- results[["rf"]]$model # 'rf' はランダムフォレストの略です
+
+# テストデータセットに対する予測を実行
+pred_rf <- predict(model_rf, testing) # subTesting を使用
+
+# 予測結果の表示
+print(pred_rf)
+
+# 結果の詳細な評価（オプション）
+cm_rf <- confusionMatrix(pred_rf, subTesting$classe)
+print(cm_rf$overall['Accuracy'])
 ```
