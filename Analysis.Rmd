@@ -1,15 +1,21 @@
 ---
-title: "予測モデリングプロジェクト"
+title: "Predictive Modeling Project"
 author: "Shinya Hashimoto"
 date: "2024-02-23"
-output: html_document
+output: 
+  html_document:
+    keep_md: true
 ---
 
-## 概要
+### Overview
+This project involves constructing a machine learning algorithm to predict the quality of activity from an activity monitor using data collected from accelerometers on wearable devices. The primary goal is to predict the manner (`classe` variable) in which exercises were performed.
 
-本プロジェクトでは、ウェアラブルデバイスから収集された加速度計のデータを使用して、運動実行の質を予測します。分析の目的は、演習の実行方法（`classe`変数）を予測することです。
+## Repository Contents
 
-## データの読み込みと前処理
+- This document in both `.Rmd` (source) and `.html` (compiled) formats.
+- Additional scripts and datasets used in the analysis.
+
+### Data Loading and Preprocessing
 
 ```{r, cache=TRUE}
 library(caret)
@@ -18,71 +24,69 @@ library(rpart.plot)
 library(corrplot)
 set.seed(12345)
 
-# データのダウンロード
+# Data download URLs
 trainingUrl <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
 testingUrl <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
+
+# Reading data
 training <- read.csv(url(trainingUrl), na.strings=c("NA","#DIV/0!", ""))
 testing <- read.csv(url(testingUrl), na.strings=c("NA","#DIV/0!", ""))
 ```
 
-## データクリーニングと前処理
+### Data Cleaning and Preprocessing
 
 ```{r, cache=TRUE}
-# NA値を含む列を削除
+# Remove columns with NA values
 training <- training[, colSums(is.na(training)) == 0]
 testing <- testing[, colSums(is.na(testing)) == 0]
 
-# 最初の7列を削除
+# Remove the first 7 columns
 training <- training[, -c(1:7)]
 testing <- testing[, -c(1:7)]
 ```
 
-## モデルの構築と評価
+### Model Building and Evaluation
 
 ```{r, cache=TRUE}
 subSamples <- createDataPartition(y=training$classe, p=0.75, list=FALSE)
 subTraining <- training[subSamples,]
 subTesting <- training[-subSamples,]
 
-# トレーニングのコントロール設定
+# Setting training control
 control <- trainControl(method="cv", number=3, verboseIter=TRUE)
 
-# 各モデルの構築と評価
+# Building and evaluating models
 models <- c("rpart", "rf", "gbm", "svmLinear")
 names(models) <- c("Decision Tree", "Random Forest", "Gradient Boosted Trees", "SVM")
 
-# モデルの訓練
-model_rpart <- train(classe ~ ., data=subTraining, method="rpart", trControl=control, tuneLength=1)
-# テストデータに対する予測
-prediction_rpart <- predict(model_rpart, subTesting)
-# 予測の精度評価
-cm_rpart <- confusionMatrix(prediction_rpart, subTesting$classe)
-print(cm_rpart)
+results <- lapply(models, function(method) {
+  # Build model
+  model <- train(classe ~ ., data=subTraining, method=method, trControl=control, tuneLength=1)
+  # Predict on test data
+  prediction <- predict(model, subTesting)
+  # Evaluate predictions
+  cm <- confusionMatrix(prediction, factor(subTesting$classe))
+  # Return confusion matrix and model
+  return(list(cm = cm, model = model))
+})
 
-# モデルの訓練
-model_rf <- train(classe ~ ., data=subTraining, method="gbm", trControl=control, tuneLength=1)
-# テストデータに対する予測
-prediction_rf <- predict(model_rf, subTesting)
-# 予測の精度評価
-cm_rf <- confusionMatrix(prediction_rf, subTesting$classe)
-print(cm_rf)
+# Display results (accuracy only)
+results_df <- sapply(results, function(x) x$cm$overall['Accuracy'])
+data.frame(Model=names(models), Accuracy=unlist(results_df), row.names=NULL)
 ```
 
-## テストセットでの予測
+## Predictions on Test Set
+Conduct test data estimation with the best performing model.
 
 ```{r, cache=TRUE}
-# Random Forestモデルを使用してテストセットの予測を行う
-# Random Forestモデルを使用してテストセットの予測を行う
-# results リストからランダムフォレストモデルを取得
-best_model <- results[["rf"]]$model # 'rf' はランダムフォレストの略です
+# Predictions on test set
+# Using Random Forest model for predictions
+# Retrieving model based on 'rf' key
+best_model <- results[["Random Forest"]]$model
 
-# テストデータセットに対する予測を実行
-pred_rf <- predict(model_rf, testing) # subTesting を使用
+# Execute prediction on test dataset
+pred <- predict(best_model, subTesting)
 
-# 予測結果の表示
-print(pred_rf)
-
-# 結果の詳細な評価（オプション）
-cm_rf <- confusionMatrix(pred_rf, subTesting$classe)
-print(cm_rf$overall['Accuracy'])
+# Display prediction results
+print(pred)
 ```

@@ -13,7 +13,7 @@
 
 <meta name="date" content="2024-02-23" />
 
-<title>予測モデリングプロジェクト</title>
+<title>Predictive Modeling Project</title>
 
 <script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
 // be compatible with the behavior of Pandoc < 2.8).
@@ -350,65 +350,83 @@ display: none;
 
 
 
-<h1 class="title toc-ignore">予測モデリングプロジェクト</h1>
+<h1 class="title toc-ignore">Predictive Modeling Project</h1>
 <h4 class="author">Shinya Hashimoto</h4>
 <h4 class="date">2024-02-23</h4>
 
 </div>
 
 
-<div id="概要" class="section level2">
-<h2>概要</h2>
-<p>本プロジェクトでは、ウェアラブルデバイスから収集された加速度計のデータを使用して、運動実行の質を予測します。分析の目的は、演習の実行方法（<code>classe</code>変数）を予測することです。</p>
+<div id="overview" class="section level3">
+<h3>Overview</h3>
+<p>This project involves constructing a machine learning algorithm to
+predict the quality of activity from an activity monitor using data
+collected from accelerometers on wearable devices. The primary goal is
+to predict the manner (<code>classe</code> variable) in which exercises
+were performed.</p>
 </div>
-<div id="データの読み込みと前処理" class="section level2">
-<h2>データの読み込みと前処理</h2>
-<pre class="r"><code>library(caret)
-library(ggplot2)
-library(rpart.plot)
-library(corrplot)
-set.seed(12345)
+<div id="repository-contents" class="section level2">
+<h2>Repository Contents</h2>
+<ul>
+<li>This document in both <code>.Rmd</code> (source) and
+<code>.html</code> (compiled) formats.</li>
+<li>Additional scripts and datasets used in the analysis.</li>
+</ul>
+<div id="data-loading-and-preprocessing" class="section level3">
+<h3>Data Loading and Preprocessing</h3>
+<pre class="r"><code>library(caret)</code></pre>
+<pre><code>## Warning: パッケージ &#39;caret&#39; はバージョン 4.3.2 の R の下で造られました</code></pre>
+<pre><code>##  要求されたパッケージ ggplot2 をロード中です</code></pre>
+<pre><code>##  要求されたパッケージ lattice をロード中です</code></pre>
+<pre class="r"><code>library(ggplot2)
+library(rpart.plot)</code></pre>
+<pre><code>## Warning: パッケージ &#39;rpart.plot&#39; はバージョン 4.3.2 の R の下で造られました</code></pre>
+<pre><code>##  要求されたパッケージ rpart をロード中です</code></pre>
+<pre><code>## Warning: パッケージ &#39;rpart&#39; はバージョン 4.3.2 の R の下で造られました</code></pre>
+<pre class="r"><code>library(corrplot)</code></pre>
+<pre><code>## Warning: パッケージ &#39;corrplot&#39; はバージョン 4.3.2 の R の下で造られました</code></pre>
+<pre><code>## corrplot 0.92 loaded</code></pre>
+<pre class="r"><code>set.seed(12345)
 
-# データのダウンロード
+# Data download URLs
 trainingUrl &lt;- &quot;https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv&quot;
 testingUrl &lt;- &quot;https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv&quot;
+
+# Reading data
 training &lt;- read.csv(url(trainingUrl), na.strings=c(&quot;NA&quot;,&quot;#DIV/0!&quot;, &quot;&quot;))
 testing &lt;- read.csv(url(testingUrl), na.strings=c(&quot;NA&quot;,&quot;#DIV/0!&quot;, &quot;&quot;))</code></pre>
 </div>
-<div id="データクリーニングと前処理" class="section level2">
-<h2>データクリーニングと前処理</h2>
-<pre class="r"><code># NA値を含む列を削除
+<div id="data-cleaning-and-preprocessing" class="section level3">
+<h3>Data Cleaning and Preprocessing</h3>
+<pre class="r"><code># Remove columns with NA values
 training &lt;- training[, colSums(is.na(training)) == 0]
 testing &lt;- testing[, colSums(is.na(testing)) == 0]
 
-# 最初の7列を削除
+# Remove the first 7 columns
 training &lt;- training[, -c(1:7)]
 testing &lt;- testing[, -c(1:7)]</code></pre>
 </div>
-<div id="モデルの構築と評価" class="section level2">
-<h2>モデルの構築と評価</h2>
+<div id="model-building-and-evaluation" class="section level3">
+<h3>Model Building and Evaluation</h3>
 <pre class="r"><code>subSamples &lt;- createDataPartition(y=training$classe, p=0.75, list=FALSE)
 subTraining &lt;- training[subSamples,]
 subTesting &lt;- training[-subSamples,]
 
-# トレーニングのコントロール設定
+# Setting training control
 control &lt;- trainControl(method=&quot;cv&quot;, number=3, verboseIter=TRUE)
 
-# トレーニングのコントロール設定
-control &lt;- trainControl(method=&quot;cv&quot;, number=3, verboseIter=TRUE)
-
-## 各モデルの構築と評価
+# Building and evaluating models
 models &lt;- c(&quot;rpart&quot;, &quot;rf&quot;, &quot;gbm&quot;, &quot;svmLinear&quot;)
 names(models) &lt;- c(&quot;Decision Tree&quot;, &quot;Random Forest&quot;, &quot;Gradient Boosted Trees&quot;, &quot;SVM&quot;)
 
 results &lt;- lapply(models, function(method) {
-  # モデルの構築
+  # Build model
   model &lt;- train(classe ~ ., data=subTraining, method=method, trControl=control, tuneLength=1)
-  # テストデータに対する予測
+  # Predict on test data
   prediction &lt;- predict(model, subTesting)
-  # 予測の精度評価
+  # Evaluate predictions
   cm &lt;- confusionMatrix(prediction, factor(subTesting$classe))
-  # 混同行列とモデルの返却
+  # Return confusion matrix and model
   return(list(cm = cm, model = model))
 })</code></pre>
 <pre><code>## + Fold1: cp=0.116 
@@ -503,7 +521,7 @@ results &lt;- lapply(models, function(method) {
 ## - Fold3: C=1 
 ## Aggregating results
 ## Fitting final model on full training set</code></pre>
-<pre class="r"><code># 結果の表示 (精度のみ)
+<pre class="r"><code># Display results (accuracy only)
 results_df &lt;- sapply(results, function(x) x$cm$overall[&#39;Accuracy&#39;])
 data.frame(Model=names(models), Accuracy=unlist(results_df), row.names=NULL)</code></pre>
 <pre><code>##                    Model  Accuracy
@@ -512,17 +530,19 @@ data.frame(Model=names(models), Accuracy=unlist(results_df), row.names=NULL)</co
 ## 3 Gradient Boosted Trees 0.7512235
 ## 4                    SVM 0.7873165</code></pre>
 </div>
-<div id="テストセットでの予測" class="section level2">
-<h2>テストセットでの予測</h2>
-<pre class="r"><code># テストセットでの予測
-# ランダムフォレストモデルを使用してテストセットの予測を行う
-# &#39;rf&#39; キーに基づくモデルの取得
+</div>
+<div id="predictions-on-test-set" class="section level2">
+<h2>Predictions on Test Set</h2>
+<p>Conduct test data estimation with the best performing model.</p>
+<pre class="r"><code># Predictions on test set
+# Using Random Forest model for predictions
+# Retrieving model based on &#39;rf&#39; key
 best_model &lt;- results[[&quot;Random Forest&quot;]]$model
 
-# テストデータセットに対する予測を実行
+# Execute prediction on test dataset
 pred &lt;- predict(best_model, subTesting)
 
-# 予測結果の表示
+# Display prediction results
 print(pred)</code></pre>
 <pre><code>##    [1] A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A
 ##   [38] A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A
