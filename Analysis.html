@@ -374,19 +374,11 @@ were performed.</p>
 </ul>
 <div id="data-loading-and-preprocessing" class="section level3">
 <h3>Data Loading and Preprocessing</h3>
-<pre class="r"><code>library(caret)</code></pre>
-<pre><code>## Warning: パッケージ &#39;caret&#39; はバージョン 4.3.2 の R の下で造られました</code></pre>
-<pre><code>##  要求されたパッケージ ggplot2 をロード中です</code></pre>
-<pre><code>##  要求されたパッケージ lattice をロード中です</code></pre>
-<pre class="r"><code>library(ggplot2)
-library(rpart.plot)</code></pre>
-<pre><code>## Warning: パッケージ &#39;rpart.plot&#39; はバージョン 4.3.2 の R の下で造られました</code></pre>
-<pre><code>##  要求されたパッケージ rpart をロード中です</code></pre>
-<pre><code>## Warning: パッケージ &#39;rpart&#39; はバージョン 4.3.2 の R の下で造られました</code></pre>
-<pre class="r"><code>library(corrplot)</code></pre>
-<pre><code>## Warning: パッケージ &#39;corrplot&#39; はバージョン 4.3.2 の R の下で造られました</code></pre>
-<pre><code>## corrplot 0.92 loaded</code></pre>
-<pre class="r"><code>set.seed(12345)
+<pre class="r"><code>library(caret)
+library(ggplot2)
+library(rpart.plot)
+library(corrplot)
+set.seed(12345)
 
 # Data download URLs
 trainingUrl &lt;- &quot;https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv&quot;
@@ -413,7 +405,7 @@ subTraining &lt;- training[subSamples,]
 subTesting &lt;- training[-subSamples,]
 
 # Setting training control
-control &lt;- trainControl(method=&quot;cv&quot;, number=3, verboseIter=TRUE)
+control &lt;- trainControl(method=&quot;cv&quot;, number=3, verboseIter=FALSE)
 
 # Building and evaluating models
 models &lt;- c(&quot;rpart&quot;, &quot;rf&quot;, &quot;gbm&quot;, &quot;svmLinear&quot;)
@@ -429,24 +421,7 @@ results &lt;- lapply(models, function(method) {
   # Return confusion matrix and model
   return(list(cm = cm, model = model))
 })</code></pre>
-<pre><code>## + Fold1: cp=0.116 
-## - Fold1: cp=0.116 
-## + Fold2: cp=0.116 
-## - Fold2: cp=0.116 
-## + Fold3: cp=0.116 
-## - Fold3: cp=0.116 
-## Aggregating results
-## Fitting final model on full training set
-## + Fold1: mtry=7 
-## - Fold1: mtry=7 
-## + Fold2: mtry=7 
-## - Fold2: mtry=7 
-## + Fold3: mtry=7 
-## - Fold3: mtry=7 
-## Aggregating results
-## Fitting final model on full training set
-## + Fold1: interaction.depth=1, n.trees=50, shrinkage=0.1, n.minobsinnode=10 
-## Iter   TrainDeviance   ValidDeviance   StepSize   Improve
+<pre><code>## Iter   TrainDeviance   ValidDeviance   StepSize   Improve
 ##      1        1.6094             nan     0.1000    0.1238
 ##      2        1.5236             nan     0.1000    0.0867
 ##      3        1.4654             nan     0.1000    0.0647
@@ -461,8 +436,6 @@ results &lt;- lapply(models, function(method) {
 ##     40        0.9336             nan     0.1000    0.0103
 ##     50        0.8753             nan     0.1000    0.0067
 ## 
-## - Fold1: interaction.depth=1, n.trees=50, shrinkage=0.1, n.minobsinnode=10 
-## + Fold2: interaction.depth=1, n.trees=50, shrinkage=0.1, n.minobsinnode=10 
 ## Iter   TrainDeviance   ValidDeviance   StepSize   Improve
 ##      1        1.6094             nan     0.1000    0.1245
 ##      2        1.5238             nan     0.1000    0.0846
@@ -478,8 +451,6 @@ results &lt;- lapply(models, function(method) {
 ##     40        0.9278             nan     0.1000    0.0121
 ##     50        0.8692             nan     0.1000    0.0058
 ## 
-## - Fold2: interaction.depth=1, n.trees=50, shrinkage=0.1, n.minobsinnode=10 
-## + Fold3: interaction.depth=1, n.trees=50, shrinkage=0.1, n.minobsinnode=10 
 ## Iter   TrainDeviance   ValidDeviance   StepSize   Improve
 ##      1        1.6094             nan     0.1000    0.1319
 ##      2        1.5226             nan     0.1000    0.0883
@@ -495,9 +466,6 @@ results &lt;- lapply(models, function(method) {
 ##     40        0.9278             nan     0.1000    0.0100
 ##     50        0.8680             nan     0.1000    0.0060
 ## 
-## - Fold3: interaction.depth=1, n.trees=50, shrinkage=0.1, n.minobsinnode=10 
-## Aggregating results
-## Fitting final model on full training set
 ## Iter   TrainDeviance   ValidDeviance   StepSize   Improve
 ##      1        1.6094             nan     0.1000    0.1301
 ##      2        1.5239             nan     0.1000    0.0885
@@ -511,16 +479,7 @@ results &lt;- lapply(models, function(method) {
 ##     10        1.2589             nan     0.1000    0.0309
 ##     20        1.1059             nan     0.1000    0.0184
 ##     40        0.9337             nan     0.1000    0.0084
-##     50        0.8760             nan     0.1000    0.0081
-## 
-## + Fold1: C=1 
-## - Fold1: C=1 
-## + Fold2: C=1 
-## - Fold2: C=1 
-## + Fold3: C=1 
-## - Fold3: C=1 
-## Aggregating results
-## Fitting final model on full training set</code></pre>
+##     50        0.8760             nan     0.1000    0.0081</code></pre>
 <pre class="r"><code># Display results (accuracy only)
 results_df &lt;- sapply(results, function(x) x$cm$overall[&#39;Accuracy&#39;])
 data.frame(Model=names(models), Accuracy=unlist(results_df), row.names=NULL)</code></pre>

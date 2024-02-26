@@ -17,7 +17,7 @@ This project involves constructing a machine learning algorithm to predict the q
 
 ### Data Loading and Preprocessing
 
-```{r, cache=TRUE}
+```{r, warning=FALSE, message=FALSE, cache=TRUE}
 library(caret)
 library(ggplot2)
 library(rpart.plot)
@@ -35,7 +35,7 @@ testing <- read.csv(url(testingUrl), na.strings=c("NA","#DIV/0!", ""))
 
 ### Data Cleaning and Preprocessing
 
-```{r, cache=TRUE}
+```{r, warning=FALSE, message=FALSE, cache=TRUE}
 # Remove columns with NA values
 training <- training[, colSums(is.na(training)) == 0]
 testing <- testing[, colSums(is.na(testing)) == 0]
@@ -47,13 +47,13 @@ testing <- testing[, -c(1:7)]
 
 ### Model Building and Evaluation
 
-```{r, cache=TRUE}
+```{r, warning=FALSE, message=FALSE, cache=TRUE}
 subSamples <- createDataPartition(y=training$classe, p=0.75, list=FALSE)
 subTraining <- training[subSamples,]
 subTesting <- training[-subSamples,]
 
 # Setting training control
-control <- trainControl(method="cv", number=3, verboseIter=TRUE)
+control <- trainControl(method="cv", number=3, verboseIter=FALSE)
 
 # Building and evaluating models
 models <- c("rpart", "rf", "gbm", "svmLinear")
@@ -78,7 +78,7 @@ data.frame(Model=names(models), Accuracy=unlist(results_df), row.names=NULL)
 ## Predictions on Test Set
 Conduct test data estimation with the best performing model.
 
-```{r, cache=TRUE}
+```{r, warning=FALSE, message=FALSE, cache=TRUE}
 # Predictions on test set
 # Using Random Forest model for predictions
 # Retrieving model based on 'rf' key
